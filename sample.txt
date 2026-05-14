@@ -1,0 +1,60 @@
+apiVersion: apps/v1 >> Specifies which version of K8 api you'r using
+kind: Deployment >> resource type
+metadata:
+  name: fastapi-deployment >> unique name for the Deployment
+spec:
+  replicas: 3 >> Number of Pod copies you want running
+  selector:
+    matchLabels:
+      app: fastapi-app >> Defines how the Deployment finds the Pods it manages >> Must match the labels defined in the Pod template. 
+  template:
+    metadata:
+      labels:
+        app: fastapi-app >>  Labels applied to Pods created by this Deployment.
+    spec:
+      containers:
+        - name: fastapi-container identifier for the container.
+          image: your-dockerhub-username/fastapi-app:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: fastapi-config
+                  key: APP_ENV
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: fastapi-config
+                  key: LOG_LEVEL
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fastapi-secret
+                  key: DATABASE_PASSWORD
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+			  
+-----------------------------------------------------------
+
+apiVersion: v1 >> K8 API version
+kind: Service >> resource type
+metadata:
+  name: fastapi-service >> unique name for the Service.
+spec:
+  selector:
+    app: fastapi-app >> Tells the Service which Pods to route traffic to.
+					 >> Must match the labels defined in the Deployment’s Pod template
+					 >> Without this, the Service won’t know which Pods to connect.
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+
